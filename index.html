@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="LemonLauncher — Ücretsiz, açık kaynaklı Minecraft launcher. Çoklu profil, otomatik sürüm yönetimi ve sıfır güçlük ile oyna.">
+<meta name="theme-color" content="#f5c518">
+<meta property="og:title" content="LemonLauncher — Minecraft Launcher">
+<meta property="og:description" content="Ücretsiz, açık kaynaklı Minecraft launcher. Tek tıkla başlat.">
+<meta property="og:type" content="website">
+<title>LemonLauncher — Minecraft Launcher</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;700&display=swap');
+
+:root {
+  --y:    #f5c518;
+  --y2:   #ffd84d;
+  --ydim: #c49a00;
+  --bg:   #050400;
+  --bg2:  #0d0b00;
+  --bg3:  #141200;
+  --text: #f0e8c0;
+  --dim:  #6a6040;
+  --dim2: #3a3010;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ── CUSTOM CURSOR ── */
+.cursor {
+  position: fixed; z-index: 9999;
+  width: 10px; height: 10px;
+  background: var(--y);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
+  mix-blend-mode: difference;
+}
+.cursor-ring {
+  position: fixed; z-index: 9998;
+  width: 36px; height: 36px;
+  border: 1px solid rgba(245,197,24,0.4);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease, width 0.3s, height 0.3s;
+}
+
+/* ── NOISE TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 20px 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(to bottom, rgba(5,4,0,0.95), transparent);
+  backdrop-filter: blur(0px);
+  transition: backdrop-filter 0.3s, background 0.3s;
+}
+nav.scrolled {
+  background: rgba(5,4,0,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(245,197,24,0.08);
+}
+
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: var(--y);
+  text-shadow: 0 0 30px rgba(245,197,24,0.4);
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none;
+}
+.nav-logo img { width: 28px; height: 28px; image-rendering: pixelated; }
+
+.nav-links {
+  display: flex; gap: 36px; list-style: none;
+}
+.nav-links a {
+  font-size: 13px; font-weight: 500;
+  color: var(--dim);
+  text-decoration: none;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--y); }
+
+.nav-dl {
+  background: var(--y);
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 2px;
+  padding: 10px 22px;
+  border: none;
+  cursor: none;
+  text-decoration: none;
+  transition: all 0.2s;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+}
+.nav-dl:hover { background: var(--y2); transform: translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  padding: 120px 60px 80px;
+}
+
+/* Grid background */
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(245,197,24,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,197,24,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+/* Radial glow */
+.hero::after {
+  content: '';
+  position: absolute;
+  width: 800px; height: 800px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245,197,24,0.06) 0%, transparent 70%);
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative; z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 80px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.hero-left { display: flex; flex-direction: column; gap: 28px; }
+
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(245,197,24,0.08);
+  border: 1px solid rgba(245,197,24,0.2);
+  color: var(--y);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 2px;
+  padding: 7px 16px;
+  width: fit-content;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  animation: fade-in 0.6s ease 0.2s both;
+}
+
+.hero-tag::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--y);
+  border-radius: 1px;
+  box-shadow: 0 0 6px var(--y);
+  animation: blink 1.5s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(64px, 7vw, 100px);
+  line-height: 0.92;
+  letter-spacing: 2px;
+  color: var(--text);
+  animation: fade-in 0.7s ease 0.3s both;
+}
+.hero-title span {
+  color: var(--y);
+  text-shadow: 0 0 60px rgba(245,197,24,0.3);
+  display: block;
+}
+
+.hero-desc {
+  font-size: 16px; line-height: 1.7;
+  color: var(--dim);
+  max-width: 420px;
+  animation: fade-in 0.7s ease 0.5s both;
+}
+
+.hero-actions {
+  display: flex; gap: 14px; align-items: center;
+  animation: fade-in 0.7s ease 0.7s both;
+}
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--y);
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 2px;
+  padding: 16px 32px;
+  text-decoration: none;
+  cursor: none;
+  transition: all 0.2s;
+  clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.4s;
+}
+.btn-primary:hover::after { transform: translateX(100%); }
+.btn-primary:hover { background: var(--y2); box-shadow: 0 0 40px rgba(245,197,24,0.3); }
+
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: transparent;
+  color: var(--dim);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px; letter-spacing: 1px;
+  padding: 16px 24px;
+  border: 1px solid var(--dim2);
+  text-decoration: none;
+  cursor: none;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: var(--y); color: var(--y); }
+
+.dl-info {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--dim2);
+  letter-spacing: 1px;
+  animation: fade-in 0.7s ease 0.9s both;
+}
+
+/* Hero right - floating lemon */
+.hero-right {
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  animation: fade-in 0.8s ease 0.4s both;
+}
+
+.lemon-container {
+  position: relative;
+  width: 340px; height: 340px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.lemon-img {
+  width: 220px; height: 220px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 40px rgba(245,197,24,0.5)) drop-shadow(0 20px 60px rgba(245,197,24,0.2));
+  animation: float 4s ease-in-out infinite;
+  position: relative; z-index: 2;
+}
+
+@keyframes float {
+  0%,100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-20px) rotate(2deg); }
+}
+
+/* Orbit rings */
+.orbit {
+  position: absolute; border-radius: 50%;
+  border: 1px solid rgba(245,197,24,0.1);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+}
+.orbit-1 { width: 280px; height: 280px; border-color: rgba(245,197,24,0.12); animation: orbit-spin 12s linear infinite; }
+.orbit-2 { width: 340px; height: 200px; border-color: rgba(245,197,24,0.06); animation: orbit-spin 18s linear infinite reverse; transform: translate(-50%,-50%) rotateX(70deg); }
+
+@keyframes orbit-spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+/* Orbit dot */
+.orbit-dot {
+  position: absolute;
+  width: 6px; height: 6px;
+  background: var(--y);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--y);
+  top: 0; left: 50%;
+  transform-origin: 0 140px;
+  animation: orbit-dot 12s linear infinite;
+}
+@keyframes orbit-dot { to { transform: rotate(360deg); } }
+
+/* Glow base */
+.lemon-glow {
+  position: absolute;
+  width: 200px; height: 40px;
+  background: radial-gradient(ellipse, rgba(245,197,24,0.15) 0%, transparent 70%);
+  bottom: 40px; left: 50%; transform: translateX(-50%);
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+@keyframes glow-pulse {
+  0%,100% { opacity: 0.6; transform: translateX(-50%) scaleX(0.8); }
+  50% { opacity: 1; transform: translateX(-50%) scaleX(1.2); }
+}
+
+/* Stats strip */
+.stats-strip {
+  position: absolute; bottom: 60px;
+  left: 0; right: 0;
+  display: flex; justify-content: center; gap: 80px;
+  z-index: 2;
+  animation: fade-in 0.7s ease 1s both;
+}
+.stat { text-align: center; }
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px; letter-spacing: 2px;
+  color: var(--y);
+  text-shadow: 0 0 20px rgba(245,197,24,0.3);
+}
+.stat-lbl { font-size: 11px; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scroll indicator */
+.scroll-ind {
+  position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  font-family: 'DM Mono', monospace; font-size: 9px; color: var(--dim2);
+  letter-spacing: 2px; z-index: 2;
+  animation: fade-in 1s ease 1.5s both;
+}
+.scroll-line {
+  width: 1px; height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--dim2));
+  animation: scroll-move 2s ease-in-out infinite;
+}
+@keyframes scroll-move {
+  0%,100% { transform: scaleY(0); transform-origin: top; }
+  50% { transform: scaleY(1); transform-origin: top; }
+}
+
+/* ── FEATURES ── */
+.section { padding: 120px 60px; position: relative; z-index: 2; }
+
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 4px;
+  color: var(--y); text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-label::before {
+  content: '';
+  width: 30px; height: 1px; background: var(--y);
+}
+
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 5vw, 68px);
+  letter-spacing: 2px;
+  line-height: 0.95;
+  max-width: 700px;
+  margin-bottom: 60px;
+}
+.section-title span { color: var(--y); }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  max-width: 1200px; margin: 0 auto;
+}
+
+.feature-card {
+  background: var(--bg2);
+  padding: 36px 32px;
+  border: 1px solid var(--dim2);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, background 0.3s;
+  cursor: none;
+}
+.feature-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--y), transparent);
+  transform: scaleX(0);
+  transition: transform 0.4s;
+}
+.feature-card:hover { border-color: rgba(245,197,24,0.2); background: var(--bg3); }
+.feature-card:hover::before { transform: scaleX(1); }
+
+.feature-icon {
+  font-size: 32px; margin-bottom: 20px;
+  display: block;
+  filter: grayscale(0.3);
+}
+.feature-num {
+  position: absolute; top: 20px; right: 24px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 60px; letter-spacing: 2px;
+  color: rgba(245,197,24,0.04);
+  line-height: 1;
+}
+.feature-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px; letter-spacing: 1px;
+  color: var(--text); margin-bottom: 10px;
+}
+.feature-desc {
+  font-size: 14px; line-height: 1.7;
+  color: var(--dim);
+}
+
+/* ── DOWNLOAD SECTION ── */
+.dl-section {
+  padding: 120px 60px;
+  position: relative; z-index: 2;
+  background: var(--bg2);
+  border-top: 1px solid var(--dim2);
+  border-bottom: 1px solid var(--dim2);
+  overflow: hidden;
+}
+
+.dl-section::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245,197,24,0.04) 0%, transparent 70%);
+  right: -100px; top: 50%; transform: translateY(-50%);
+}
+
+.dl-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items: center;
+}
+
+.dl-left {}
+
+.dl-card {
+  background: var(--bg3);
+  border: 1px solid rgba(245,197,24,0.15);
+  padding: 36px;
+  position: relative;
+  overflow: hidden;
+}
+.dl-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(245,197,24,0.03) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.dl-platform {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--dim2);
+}
+.dl-platform-icon { font-size: 28px; }
+.dl-platform-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px; letter-spacing: 2px; color: var(--text);
+}
+.dl-platform-sub { font-size: 12px; color: var(--dim); font-family: 'DM Mono', monospace; }
+
+.dl-meta {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; margin-bottom: 28px;
+}
+.dl-meta-item { }
+.dl-meta-lbl { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--dim2); margin-bottom: 4px; }
+.dl-meta-val { font-size: 14px; font-weight: 600; color: var(--text); }
+
+.dl-btn-main {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  background: var(--y);
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; font-weight: 500; letter-spacing: 2px;
+  padding: 18px 32px;
+  text-decoration: none;
+  cursor: none;
+  transition: all 0.2s;
+  width: 100%;
+  clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+  position: relative; overflow: hidden;
+}
+.dl-btn-main::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s;
+}
+.dl-btn-main:hover::after { transform: translateX(100%); }
+.dl-btn-main:hover { background: var(--y2); box-shadow: 0 0 50px rgba(245,197,24,0.4); }
+.dl-btn-main svg { width: 18px; height: 18px; }
+
+.dl-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--dim2);
+  letter-spacing: 1px; text-align: center;
+  margin-top: 14px;
+}
+
+/* Requirements */
+.req-list { display: flex; flex-direction: column; gap: 16px; }
+.req-item {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg2);
+  border: 1px solid var(--dim2);
+  border-left: 2px solid var(--y);
+}
+.req-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.req-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.req-val { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--y); }
+
+/* ── HOW TO ── */
+.howto-section { padding: 120px 60px; position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; }
+
+.steps {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0; position: relative;
+}
+.steps::before {
+  content: '';
+  position: absolute;
+  top: 32px; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--dim2) 20%, var(--dim2) 80%, transparent);
+}
+
+.step {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 0 20px; position: relative;
+}
+.step-num {
+  width: 64px; height: 64px;
+  border: 1px solid rgba(245,197,24,0.3);
+  border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px; letter-spacing: 2px;
+  color: var(--y);
+  background: var(--bg2);
+  margin-bottom: 20px;
+  position: relative; z-index: 1;
+  transition: all 0.3s;
+}
+.step:hover .step-num {
+  background: var(--y);
+  color: #000;
+  box-shadow: 0 0 30px rgba(245,197,24,0.3);
+}
+.step-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.step-desc  { font-size: 13px; line-height: 1.6; color: var(--dim); }
+
+/* ── FOOTER ── */
+footer {
+  padding: 40px 60px;
+  border-top: 1px solid var(--dim2);
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative; z-index: 2;
+}
+.footer-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px; letter-spacing: 3px;
+  color: var(--dim2);
+  display: flex; align-items: center; gap: 8px;
+}
+.footer-logo img { width: 20px; height: 20px; image-rendering: pixelated; opacity: 0.4; }
+.footer-note { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--dim2); letter-spacing: 1px; }
+
+/* ── SCROLL REVEAL ── */
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ── TICKER ── */
+.ticker-wrap {
+  overflow: hidden;
+  border-top: 1px solid var(--dim2);
+  border-bottom: 1px solid var(--dim2);
+  background: var(--bg2);
+  padding: 14px 0;
+  position: relative; z-index: 2;
+}
+.ticker {
+  display: flex; gap: 0;
+  animation: ticker 20s linear infinite;
+  white-space: nowrap;
+}
+.ticker-item {
+  display: flex; align-items: center; gap: 20px;
+  padding: 0 40px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 3px;
+  color: var(--dim2); text-transform: uppercase;
+}
+.ticker-item span { color: var(--y); }
+.ticker-sep { color: var(--dim2); }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .hero-inner, .dl-inner { grid-template-columns: 1fr; }
+  .hero-right { display: none; }
+  .features-grid { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr 1fr; gap: 30px; }
+  nav { padding: 16px 24px; }
+  .nav-links { display: none; }
+  .section, .dl-section { padding: 80px 24px; }
+}
+
+/* Hide custom cursor on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  body { cursor: auto; }
+  .cursor, .cursor-ring { display: none; }
+  a, button, .feature-card, .step { cursor: pointer; }
+  .btn-primary, .btn-secondary, .nav-dl, .dl-btn-main { cursor: pointer; }
+}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a class="nav-logo" href="#">
+    🍋 LEMONLAUNCHER
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Özellikler</a></li>
+    <li><a href="#download">İndir</a></li>
+    <li><a href="#howto">Kurulum</a></li>
+  </ul>
+  <a href="#download" class="nav-dl">⬇ İNDİR</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-tag">🍋 v1.0.0 — ŞİMDİ ÇIKTI</div>
+
+      <h1 class="hero-title">
+        MINECRAFT<span>LAUNCHER</span>
+      </h1>
+
+      <p class="hero-desc">
+        LemonLauncher ile Minecraft'ını tek tıkla başlat. Çoklu profil, otomatik sürüm yönetimi ve sıfır güçlük ile oyunun tadını çıkar.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#download" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-5-5h3V4h4v7h3l-5 5zm-6 4v-2h12v2H6z"/></svg>
+          ÜCRETSİZ İNDİR
+        </a>
+        <a href="#features" class="btn-secondary">Özellikleri Gör →</a>
+      </div>
+
+      <div class="dl-info">Windows 10/11 · 64-bit · ~85 MB</div>
+    </div>
+
+    <div class="hero-right">
+      <div class="lemon-container">
+        <div class="orbit orbit-1">
+          <div class="orbit-dot"></div>
+        </div>
+        <div class="orbit orbit-2"></div>
+        <img class="lemon-img" src="https://i.imgur.com/placeholder.png"
+             onerror="this.style.fontSize='120px';this.style.lineHeight='1';this.outerHTML='<div style=\'font-size:120px;line-height:1;filter:drop-shadow(0 0 40px rgba(245,197,24,0.5));animation:float 4s ease-in-out infinite\'>🍋</div>'"
+             alt="LemonLauncher">
+        <div class="lemon-glow"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-strip">
+    <div class="stat">
+      <div class="stat-num" data-count="10">0</div>
+      <div class="stat-lbl">Minecraft Sürümü</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" data-count="100">0</div>
+      <div class="stat-lbl">% Ücretsiz</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" data-count="85">0</div>
+      <div class="stat-lbl">MB Kurulum</div>
+    </div>
+  </div>
+
+  <div class="scroll-ind">
+    <div class="scroll-line"></div>
+    KAYDIR
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <!-- repeated twice for seamless loop -->
+    <div class="ticker-item">🍋 LEMONLAUNCHER <span class="ticker-sep">·</span> <span>ÜCRETSIZ</span> <span class="ticker-sep">·</span> HIZLI KURULUM <span class="ticker-sep">·</span> <span>ÇOKLU PROFİL</span> <span class="ticker-sep">·</span> OTOMATİK GÜNCELLEME <span class="ticker-sep">·</span> <span>OFFLINE DESTEK</span> <span class="ticker-sep">·</span> JAVA YÖNETİMİ <span class="ticker-sep">·</span></div>
+    <div class="ticker-item">🍋 LEMONLAUNCHER <span class="ticker-sep">·</span> <span>ÜCRETSIZ</span> <span class="ticker-sep">·</span> HIZLI KURULUM <span class="ticker-sep">·</span> <span>ÇOKLU PROFİL</span> <span class="ticker-sep">·</span> OTOMATİK GÜNCELLEME <span class="ticker-sep">·</span> <span>OFFLINE DESTEK</span> <span class="ticker-sep">·</span> JAVA YÖNETİMİ <span class="ticker-sep">·</span></div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="section-label reveal">ÖZELLİKLER</div>
+    <h2 class="section-title reveal">NEDEN <span>LEMON</span>LAUNCHER?</h2>
+
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-num">01</div>
+        <div class="feature-title">Hızlı Başlatma</div>
+        <p class="feature-desc">Otomatik sürüm indirme ve Java kontrol sistemi ile Minecraft'ını saniyeler içinde başlat.</p>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.1s">
+        <span class="feature-icon">🎮</span>
+        <div class="feature-num">02</div>
+        <div class="feature-title">Çoklu Profil</div>
+        <p class="feature-desc">Her sürüm için ayrı profil oluştur. RAM ayarı, JVM argümanları ve sürümü ayrı ayrı yönet.</p>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.2s">
+        <span class="feature-icon">📦</span>
+        <div class="feature-num">03</div>
+        <div class="feature-title">Sürüm Yönetimi</div>
+        <p class="feature-desc">Release, Snapshot, Beta ve Alpha dahil tüm Minecraft sürümlerini tek yerden indir ve yönet.</p>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.3s">
+        <span class="feature-icon">📊</span>
+        <div class="feature-num">04</div>
+        <div class="feature-title">İndirme Takibi</div>
+        <p class="feature-desc">Gerçek zamanlı ilerleme çubuğu, indirme hızı ve tahmini bitiş süresiyle indirmeyi izle.</p>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.4s">
+        <span class="feature-icon">👤</span>
+        <div class="feature-num">05</div>
+        <div class="feature-title">Hesap Yönetimi</div>
+        <p class="feature-desc">Çevrimdışı hesap veya Microsoft hesabıyla giriş. Birden fazla hesabı kaydet ve aralarında geç.</p>
+      </div>
+      <div class="feature-card reveal" style="transition-delay:0.5s">
+        <span class="feature-icon">🍋</span>
+        <div class="feature-num">06</div>
+        <div class="feature-title">Sıfır Karmaşıklık</div>
+        <p class="feature-desc">Temiz arayüz, açılış animasyonu ve tek tıkla kurulum. Oyun için değil, oyuncu için tasarlandı.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="dl-section" id="download">
+  <div class="dl-inner">
+    <div class="dl-left reveal">
+      <div class="section-label">İNDİR</div>
+      <h2 class="section-title" style="margin-bottom:12px">HEMEN<br><span>BAŞLA</span></h2>
+      <p style="font-size:15px;color:var(--dim);line-height:1.7;margin-bottom:32px">Ücretsiz, açık kaynaklı ve reklamsız. Bir kez kur, sonsuza kadar kullan.</p>
+
+      <div class="dl-card">
+        <div class="dl-platform">
+          <div class="dl-platform-icon">🪟</div>
+          <div>
+            <div class="dl-platform-name">Windows</div>
+            <div class="dl-platform-sub">NSIS Installer · x64</div>
+          </div>
+        </div>
+
+        <div class="dl-meta">
+          <div class="dl-meta-item">
+            <div class="dl-meta-lbl">SÜRÜM</div>
+            <div class="dl-meta-val">v1.0.0</div>
+          </div>
+          <div class="dl-meta-item">
+            <div class="dl-meta-lbl">BOYUT</div>
+            <div class="dl-meta-val">~85 MB</div>
+          </div>
+          <div class="dl-meta-item">
+            <div class="dl-meta-lbl">ÇIKARILDI</div>
+            <div class="dl-meta-val">Mar 2026</div>
+          </div>
+          <div class="dl-meta-item">
+            <div class="dl-meta-lbl">PLATFORM</div>
+            <div class="dl-meta-val">Win 10/11</div>
+          </div>
+        </div>
+
+        <a href="LemonLauncher-Setup-1.0.0.exe" class="dl-btn-main" download>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-5-5h3V4h4v7h3l-5 5zm-6 4v-2h12v2H6z"/></svg>
+          LemonLauncher-Setup-1.0.0.exe
+        </a>
+        <div class="dl-note">
+          ⚠ Windows Defender uyarısı verebilir — güvenlidir. "Yine de çalıştır"a tıklayın.
+        </div>
+      </div>
+    </div>
+
+    <div class="dl-right reveal" style="transition-delay:0.2s">
+      <div class="section-label">GEREKSİNİMLER</div>
+      <h3 style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin-bottom:28px;color:var(--text)">SİSTEM <span style="color:var(--y)">GEREKSİNİMLERİ</span></h3>
+
+      <div class="req-list">
+        <div class="req-item">
+          <div class="req-icon">☕</div>
+          <div>
+            <div class="req-name">Java 17 veya üzeri</div>
+            <div class="req-val">Minecraft 1.17+ için · adoptium.net</div>
+          </div>
+        </div>
+        <div class="req-item">
+          <div class="req-icon">💾</div>
+          <div>
+            <div class="req-name">Minimum 4 GB RAM</div>
+            <div class="req-val">8 GB önerilen · 16 GB ideal</div>
+          </div>
+        </div>
+        <div class="req-item">
+          <div class="req-icon">💿</div>
+          <div>
+            <div class="req-name">1 GB Depolama</div>
+            <div class="req-val">Sürüm başına ~500 MB ek alan</div>
+          </div>
+        </div>
+        <div class="req-item">
+          <div class="req-icon">🌐</div>
+          <div>
+            <div class="req-name">İnternet Bağlantısı</div>
+            <div class="req-val">Sadece ilk sürüm indirmesi için</div>
+          </div>
+        </div>
+        <div class="req-item">
+          <div class="req-icon">🪟</div>
+          <div>
+            <div class="req-name">Windows 10 / 11</div>
+            <div class="req-val">64-bit · x64 mimarisi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW TO -->
+<section class="section" id="howto">
+  <div class="howto-section">
+    <div class="section-label reveal">KURULUM</div>
+    <h2 class="section-title reveal" style="text-align:center;max-width:none">4 ADIMDA <span>HAZIR</span></h2>
+
+    <div class="steps reveal">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-title">İndir</div>
+        <p class="step-desc">Yukarıdaki butona tıkla ve Setup dosyasını indir.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-title">Kur</div>
+        <p class="step-desc">Setup.exe'yi çalıştır ve kurulum sihirbazını takip et.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-title">Hesap Ekle</div>
+        <p class="step-desc">Hesaplar sekmesinden çevrimdışı veya Microsoft hesabı ekle.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-title">Oyna!</div>
+        <p class="step-desc">Bir sürüm indir, profil oluştur ve OYNA'ya bas!</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">🍋 LEMONLAUNCHER</div>
+  <div class="footer-note">Minecraft, Mojang AB'nin tescilli markasıdır. Bu proje Mojang ile ilişkili değildir.</div>
+</footer>
+
+<script>
+// Custom cursor
+const cursor = document.getElementById('cursor');
+const ring   = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top  = my + 'px';
+});
+
+function animRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(animRing);
+}
+animRing();
+
+document.querySelectorAll('a, button, .feature-card, .step').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.style.width = '18px'; cursor.style.height = '18px';
+    ring.style.width = '52px'; ring.style.height = '52px';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursor.style.width = '10px'; cursor.style.height = '10px';
+    ring.style.width = '36px'; ring.style.height = '36px';
+  });
+});
+
+// Nav scroll
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// Scroll reveal
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// Counter animation
+const counters = document.querySelectorAll('[data-count]');
+const cObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target, target = +el.dataset.count;
+    const suffix = el.textContent.includes('+') ? '+' : '';
+    let cur = 0;
+    const step = target / 40;
+    const timer = setInterval(() => {
+      cur = Math.min(cur + step, target);
+      el.textContent = Math.floor(cur) + (cur >= target ? suffix : '');
+      if (cur >= target) clearInterval(timer);
+    }, 30);
+    cObs.unobserve(el);
+  });
+}, { threshold: 0.5 });
+counters.forEach(el => cObs.observe(el));
+
+// Lemon emoji fallback float animation
+const style = document.createElement('style');
+style.textContent = `@keyframes float { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-20px) rotate(2deg)} }`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
